@@ -1,5 +1,5 @@
 # Dockerfile para el Backend (Node.js/Express)
-FROM node:22-alpine
+FROM node:24-alpine
 
 # Establecer el directorio de trabajo
 WORKDIR /app
