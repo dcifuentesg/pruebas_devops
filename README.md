@@ -1,4 +1,11 @@
-# mascotas-app-web
+# 🐾 Mascotas App Web
+
+[![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Docker](https://img.shields.io/badge/docker-built-blue)
+![Security](https://img.shields.io/badge/security-scanned-green)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 [![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
 [![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
