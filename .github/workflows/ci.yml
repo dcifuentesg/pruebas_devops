@@ -69,7 +69,15 @@ jobs:
     - name: Run tests with coverage
       run: npm run test:coverage
     
-    - name: Upload coverage reports
+    - name: Upload backend coverage
+      uses: actions/upload-artifact@v4
+      if: matrix.node-version == '20.x'
+      with:
+        name: backend-coverage
+        path: ./backend/coverage/
+        retention-days: 1
+    
+    - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v4
       with:
         file: ./backend/coverage/lcov.info
@@ -112,12 +120,54 @@ jobs:
     - name: Build application
       run: npm run build
     
+    - name: Upload frontend coverage
+      uses: actions/upload-artifact@v4
+      if: matrix.node-version == '20.x'
+      with:
+        name: frontend-coverage
+        path: ./frontend/coverage/
+        retention-days: 1
+    
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4
+      if: matrix.node-version == '20.x'
       with:
-        name: frontend-build-${{ matrix.node-version }}
+        name: frontend-build
         path: ./frontend/dist
         retention-days: 7
+
+  # Job para combinar coverage reports
+  coverage-report:
+    runs-on: ubuntu-latest
+    needs: [backend-tests, frontend-tests]
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - name: Download backend coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: backend-coverage
+        path: ./backend-coverage
+    
+    - name: Download frontend coverage
+      uses: actions/download-artifact@v4
+      with:
+        name: frontend-coverage
+        path: ./frontend-coverage
+    
+    - name: Combine coverage reports
+      run: |
+        mkdir -p ./combined-coverage
+        # Aquí puedes combinar los reportes si lo necesitas
+        cp -r ./backend-coverage/* ./combined-coverage/ 2>/dev/null || true
+        cp -r ./frontend-coverage/* ./combined-coverage/ 2>/dev/null || true
+    
+    - name: Upload combined coverage
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-reports
+        path: ./combined-coverage/
+        retention-days: 1
 
   # Job para Docker Build
   docker-build:
