@@ -1,5 +1,4 @@
 {
-  "preset": "@babel/preset-env",
   "testEnvironment": "jsdom",
   "setupFilesAfterEnv": ["<rootDir>/src/setupTests.js"],
   "moduleNameMapping": {

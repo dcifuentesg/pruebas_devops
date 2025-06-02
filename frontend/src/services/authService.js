@@ -42,22 +42,14 @@ api.interceptors.response.use(
 const authService = {
   // Registro de usuario
   register: async (userData) => {
-    try {
-      const response = await api.post('/users/register', userData)
-      return response
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/users/register', userData)
+    return response
   },
 
   // Inicio de sesión
   login: async (credentials) => {
-    try {
-      const response = await api.post('/users/login', credentials)
-      return response
-    } catch (error) {
-      throw error
-    }
+    const response = await api.post('/users/login', credentials)
+    return response
   },
 
   // Logout
