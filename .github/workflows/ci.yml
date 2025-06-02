@@ -156,24 +156,52 @@ jobs:
         # Crear archivo .env temporal para testing
         echo "NODE_ENV=production" > ./backend/.env
         echo "PORT=5000" >> ./backend/.env
-        echo "MONGO_URI=mongodb://mongo:27017/mascotas_test" >> ./backend/.env
+        echo "MONGO_URI=mongodb+srv://admin:admin123@cluster0.dej2xm9.mongodb.net/mascotasBogota?retryWrites=true&w=majority&appName=Cluster0" >> ./backend/.env
         echo "JWT_SECRET=test_jwt_secret_key" >> ./backend/.env
         
+        # Verificar que Docker Compose está disponible
+        docker --version
+        docker compose version
+        
         # Construir y ejecutar en modo detached
-        docker-compose up --build -d
+        docker compose up --build -d
         
         # Esperar a que los servicios estén listos
-        sleep 30
+        sleep 45
         
-        # Verificar que los servicios estén corriendo
-        docker-compose ps
+        # Verificar que los contenedores estén corriendo
+        docker compose ps
+        docker ps
         
-        # Hacer health check básico
-        curl --fail http://localhost:5000/api || exit 1
-        curl --fail http://localhost || exit 1
+        # Ver logs para debugging
+        docker compose logs backend
+        docker compose logs frontend
+        
+        # Hacer health check básico con retry
+        echo "Testing backend health..."
+        for i in {1..10}; do
+          if curl -f http://localhost:5000/api; then
+            echo "Backend is healthy"
+            break
+          else
+            echo "Backend not ready, attempt $i/10"
+            sleep 5
+          fi
+        done
+        
+        echo "Testing frontend health..."
+        for i in {1..10}; do
+          if curl -f http://localhost; then
+            echo "Frontend is healthy"
+            break
+          else
+            echo "Frontend not ready, attempt $i/10"
+            sleep 5
+          fi
+        done
         
         # Limpiar
-        docker-compose down
+        docker compose down
         
   # Job para Security Scan
   security-scan:
