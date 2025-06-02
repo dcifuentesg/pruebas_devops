@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # Servicio Backend
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: mascotas-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - NODE_ENV=production
+      - PORT=5000
+      - CORS_ORIGIN=http://localhost
+      - MONGO_URI=mongodb+srv://admin:admin123@cluster0.dej2xm9.mongodb.net/mascotasBogota?retryWrites=true&w=majority&appName=Cluster0
+      - JWT_SECRET=unaClaveSecretaSegura123
+    networks:
+      - mascotas-network
+    # depends_on:
+    #   - mongo
+    volumes:
+      - ./backend:/app
+      - /app/node_modules
+    restart: unless-stopped
+
+  # Servicio Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: mascotas-frontend
+    ports:
+      - "80:80"
+    networks:
+      - mascotas-network
+    depends_on:
+      - backend
+    restart: unless-stopped
+  # Base de datos MongoDB (comentado porque usamos MongoDB Atlas)
+  # mongo:
+  #   image: mongo:6.0
+  #   container_name: mascotas-mongo
+  #   ports:
+  #     - "27017:27017"
+  #   environment:
+  #     - MONGO_INITDB_ROOT_USERNAME=admin
+  #     - MONGO_INITDB_ROOT_PASSWORD=password123
+  #     - MONGO_INITDB_DATABASE=mascotas
+  #   volumes:
+  #     - mongo_data:/data/db
+  #     - ./mongo-init:/docker-entrypoint-initdb.d
+  #   networks:
+  #     - mascotas-network
+  #   restart: unless-stopped
+
+networks:
+  mascotas-network:
+    driver: bridge
+
+volumes:
+  mongo_data:
+    driver: local
