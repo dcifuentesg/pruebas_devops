@@ -1,8 +1,6 @@
 name: Generate Status Badges
 
 on:
-  push:
-    branches: [ main ]
   workflow_run:
     workflows: ["CI Pipeline"]
     branches: [ main ]
@@ -10,29 +8,101 @@ on:
       - completed
 
 jobs:
-  badge:
+  update-badges:
     runs-on: ubuntu-latest
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
     
-    - name: Generate test coverage badge
-      uses: tj-actions/coverage-badge-py@v2
-      with:
-        output: coverage-badge.svg
+    - name: Create badges directory
+      run: mkdir -p .github/badges
+    
+    - name: Generate build status badge
+      run: |
+        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+          echo "![Build Status](https://img.shields.io/badge/build-passing-brightgreen)" > .github/badges/build.md
+          echo "Build status: PASSING ✅"
+        else
+          echo "![Build Status](https://img.shields.io/badge/build-failing-red)" > .github/badges/build.md
+          echo "Build status: FAILING ❌"
+        fi
+    
+    - name: Generate test status badge  
+      run: |
+        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+          echo "![Tests](https://img.shields.io/badge/tests-passing-brightgreen)" > .github/badges/tests.md
+          echo "Tests status: PASSING ✅"
+        else
+          echo "![Tests](https://img.shields.io/badge/tests-failing-red)" > .github/badges/tests.md
+          echo "Tests status: FAILING ❌"
+        fi
+    
+    - name: Generate docker status badge
+      run: |
+        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+          echo "![Docker](https://img.shields.io/badge/docker-built-blue)" > .github/badges/docker.md
+          echo "Docker status: BUILT ✅"
+        else
+          echo "![Docker](https://img.shields.io/badge/docker-failed-red)" > .github/badges/docker.md
+          echo "Docker status: FAILED ❌"
+        fi
+    
+    - name: Generate security status badge
+      run: |
+        # El security scan tiene continue-on-error, así que siempre será success
+        echo "![Security](https://img.shields.io/badge/security-scanned-green)" > .github/badges/security.md
+        echo "Security status: SCANNED ✅"
+    
+    - name: Update README with badges
+      run: |
+        # Crear sección de badges actualizada
+        cat > temp_badges.md << 'EOF'
+        # 🐾 Mascotas App Web
         
-    - name: Verify changed files
-      uses: tj-actions/verify-changed-files@v16
-      id: verify-changed-files
-      with:
-        files: coverage-badge.svg
+        [![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+        EOF
         
-    - name: Commit changes
-      if: steps.verify-changed-files.outputs.files_changed == 'true'
+        # Agregar badges dinámicos
+        cat .github/badges/build.md >> temp_badges.md
+        cat .github/badges/tests.md >> temp_badges.md  
+        cat .github/badges/docker.md >> temp_badges.md
+        cat .github/badges/security.md >> temp_badges.md
+        
+        echo "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)" >> temp_badges.md
+        echo "" >> temp_badges.md
+        
+        # Reemplazar la parte inicial del README manteniendo el resto del contenido
+        tail -n +3 README.md > temp_content.md
+        cat temp_badges.md temp_content.md > new_README.md
+        mv new_README.md README.md
+        
+        # Limpiar archivos temporales
+        rm -f temp_badges.md temp_content.md
+    
+    - name: Show badge status summary
+      run: |
+        echo "📊 Badge Status Summary:"
+        echo "========================"
+        echo "🔨 Build: ${{ github.event.workflow_run.conclusion == 'success' && 'PASSING' || 'FAILING' }}"
+        echo "🧪 Tests: ${{ github.event.workflow_run.conclusion == 'success' && 'PASSING' || 'FAILING' }}"
+        echo "🐳 Docker: ${{ github.event.workflow_run.conclusion == 'success' && 'BUILT' || 'FAILED' }}"
+        echo "🛡️ Security: SCANNED"
+        echo "========================"
+    
+    - name: Commit badge updates
       run: |
         git config --local user.email "action@github.com"
         git config --local user.name "GitHub Action"
-        git add coverage-badge.svg
-        git commit -m "Updated coverage badge"
-        git push
+        git add .github/badges/ README.md
+        
+        # Solo hacer commit si hay cambios
+        if ! git diff --staged --quiet; then
+          git commit -m "🏷️ Update status badges [skip ci]"
+          git push
+          echo "✅ Badges updated successfully!"
+        else
+          echo "ℹ️ No badge changes detected"
+        fi
