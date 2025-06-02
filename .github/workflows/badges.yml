@@ -2,27 +2,66 @@ name: Generate Status Badges
 
 on:
   workflow_run:
-    workflows: ["CI Pipeline"]
+    workflows: ["CI Pipeline", "CD Pipeline"]
     branches: [ main ]
     types: 
       - completed
 
+# Agregar permisos explícitos
+permissions:
+  contents: write
+  actions: read
+
 jobs:
   update-badges:
     runs-on: ubuntu-latest
+    # Solo ejecutar si ambos workflows han terminado exitosamente
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
+    
+    - name: Wait for all workflows to complete
+      run: |
+        echo "🔍 Checking status of related workflows..."
+        echo "Current workflow: ${{ github.event.workflow_run.name }}"
+        echo "Conclusion: ${{ github.event.workflow_run.conclusion }}"
+        echo "Status: ${{ github.event.workflow_run.status }}"
+    
+    - name: Get workflow status from GitHub API
+      id: workflow-status
+      run: |
+        # Obtener el estado de los workflows usando la API de GitHub
+        CI_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/ci.yml/runs?branch=main&per_page=1" \
+          | jq -r '.workflow_runs[0].conclusion')
+        
+        CD_STATUS=$(curl -s -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+          "https://api.github.com/repos/${{ github.repository }}/actions/workflows/cd.yml/runs?branch=main&per_page=1" \
+          | jq -r '.workflow_runs[0].conclusion // "not_found"')
+        
+        echo "CI Status: $CI_STATUS"
+        echo "CD Status: $CD_STATUS"
+        
+        # Determinar el estado general
+        if [ "$CI_STATUS" == "success" ] && ([ "$CD_STATUS" == "success" ] || [ "$CD_STATUS" == "not_found" ]); then
+          echo "overall_status=success" >> $GITHUB_OUTPUT
+          echo "✅ All workflows completed successfully"
+        else
+          echo "overall_status=failure" >> $GITHUB_OUTPUT
+          echo "❌ Some workflows failed"
+        fi
     
     - name: Create badges directory
       run: mkdir -p .github/badges
     
     - name: Generate build status badge
       run: |
-        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+        if [ "${{ steps.workflow-status.outputs.overall_status }}" == "success" ]; then
           echo "![Build Status](https://img.shields.io/badge/build-passing-brightgreen)" > .github/badges/build.md
           echo "Build status: PASSING ✅"
         else
@@ -32,7 +71,7 @@ jobs:
     
     - name: Generate test status badge  
       run: |
-        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+        if [ "${{ steps.workflow-status.outputs.overall_status }}" == "success" ]; then
           echo "![Tests](https://img.shields.io/badge/tests-passing-brightgreen)" > .github/badges/tests.md
           echo "Tests status: PASSING ✅"
         else
@@ -42,7 +81,7 @@ jobs:
     
     - name: Generate docker status badge
       run: |
-        if [ "${{ github.event.workflow_run.conclusion }}" == "success" ]; then
+        if [ "${{ steps.workflow-status.outputs.overall_status }}" == "success" ]; then
           echo "![Docker](https://img.shields.io/badge/docker-built-blue)" > .github/badges/docker.md
           echo "Docker status: BUILT ✅"
         else
@@ -50,11 +89,26 @@ jobs:
           echo "Docker status: FAILED ❌"
         fi
     
+    - name: Generate deployment status badge
+      run: |
+        if [ "${{ steps.workflow-status.outputs.overall_status }}" == "success" ]; then
+          echo "![Deployment](https://img.shields.io/badge/deployment-deployed-brightgreen)" > .github/badges/deployment.md
+          echo "Deployment status: DEPLOYED ✅"
+        else
+          echo "![Deployment](https://img.shields.io/badge/deployment-failed-red)" > .github/badges/deployment.md
+          echo "Deployment status: FAILED ❌"
+        fi
+    
     - name: Generate security status badge
       run: |
-        # El security scan tiene continue-on-error, así que siempre será success
-        echo "![Security](https://img.shields.io/badge/security-scanned-green)" > .github/badges/security.md
-        echo "Security status: SCANNED ✅"
+        # El security scan tiene continue-on-error, así que siempre será success si el CI pasa
+        if [ "${{ steps.workflow-status.outputs.overall_status }}" == "success" ]; then
+          echo "![Security](https://img.shields.io/badge/security-scanned-green)" > .github/badges/security.md
+          echo "Security status: SCANNED ✅"
+        else
+          echo "![Security](https://img.shields.io/badge/security-failed-red)" > .github/badges/security.md
+          echo "Security status: FAILED ❌"
+        fi
     
     - name: Update README with badges
       run: |
@@ -63,12 +117,14 @@ jobs:
         # 🐾 Mascotas App Web
         
         [![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+        [![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
         EOF
         
         # Agregar badges dinámicos
         cat .github/badges/build.md >> temp_badges.md
         cat .github/badges/tests.md >> temp_badges.md  
         cat .github/badges/docker.md >> temp_badges.md
+        cat .github/badges/deployment.md >> temp_badges.md
         cat .github/badges/security.md >> temp_badges.md
         
         echo "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)" >> temp_badges.md
@@ -86,10 +142,11 @@ jobs:
       run: |
         echo "📊 Badge Status Summary:"
         echo "========================"
-        echo "🔨 Build: ${{ github.event.workflow_run.conclusion == 'success' && 'PASSING' || 'FAILING' }}"
-        echo "🧪 Tests: ${{ github.event.workflow_run.conclusion == 'success' && 'PASSING' || 'FAILING' }}"
-        echo "🐳 Docker: ${{ github.event.workflow_run.conclusion == 'success' && 'BUILT' || 'FAILED' }}"
-        echo "🛡️ Security: SCANNED"
+        echo "🔨 Build: ${{ steps.workflow-status.outputs.overall_status == 'success' && 'PASSING' || 'FAILING' }}"
+        echo "🧪 Tests: ${{ steps.workflow-status.outputs.overall_status == 'success' && 'PASSING' || 'FAILING' }}"
+        echo "🐳 Docker: ${{ steps.workflow-status.outputs.overall_status == 'success' && 'BUILT' || 'FAILED' }}"
+        echo "🚀 Deployment: ${{ steps.workflow-status.outputs.overall_status == 'success' && 'DEPLOYED' || 'FAILED' }}"
+        echo "🛡️ Security: ${{ steps.workflow-status.outputs.overall_status == 'success' && 'SCANNED' || 'FAILED' }}"
         echo "========================"
     
     - name: Commit badge updates
@@ -100,9 +157,75 @@ jobs:
         
         # Solo hacer commit si hay cambios
         if ! git diff --staged --quiet; then
-          git commit -m "🏷️ Update status badges [skip ci]"
+          git commit -m "🏷️ Update status badges after CI/CD completion [skip ci]"
           git push
           echo "✅ Badges updated successfully!"
         else
           echo "ℹ️ No badge changes detected"
+        fi
+
+  # Job alternativo que se ejecuta si algún workflow falla
+  update-failure-badges:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    
+    permissions:
+      contents: write
+      actions: read
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        persist-credentials: true
+    
+    - name: Create badges directory
+      run: mkdir -p .github/badges
+    
+    - name: Generate failure badges
+      run: |
+        echo "![Build Status](https://img.shields.io/badge/build-failing-red)" > .github/badges/build.md
+        echo "![Tests](https://img.shields.io/badge/tests-failing-red)" > .github/badges/tests.md
+        echo "![Docker](https://img.shields.io/badge/docker-failed-red)" > .github/badges/docker.md
+        echo "![Deployment](https://img.shields.io/badge/deployment-failed-red)" > .github/badges/deployment.md
+        echo "![Security](https://img.shields.io/badge/security-failed-red)" > .github/badges/security.md
+        
+        echo "❌ Workflow failed: ${{ github.event.workflow_run.name }}"
+    
+    - name: Update README with failure badges
+      run: |
+        # Actualizar solo los badges, manteniendo el resto del README
+        cat > temp_badges.md << 'EOF'
+        # 🐾 Mascotas App Web
+        
+        [![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+        [![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
+        EOF
+        
+        cat .github/badges/build.md >> temp_badges.md
+        cat .github/badges/tests.md >> temp_badges.md  
+        cat .github/badges/docker.md >> temp_badges.md
+        cat .github/badges/deployment.md >> temp_badges.md
+        cat .github/badges/security.md >> temp_badges.md
+        
+        echo "[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)" >> temp_badges.md
+        echo "" >> temp_badges.md
+        
+        tail -n +3 README.md > temp_content.md
+        cat temp_badges.md temp_content.md > new_README.md
+        mv new_README.md README.md
+        
+        rm -f temp_badges.md temp_content.md
+    
+    - name: Commit failure badges
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add .github/badges/ README.md
+        
+        if ! git diff --staged --quiet; then
+          git commit -m "🚨 Update badges - workflow failure detected [skip ci]"
+          git push
+          echo "❌ Failure badges updated"
         fi
