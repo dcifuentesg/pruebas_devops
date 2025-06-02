@@ -1,8 +1,8 @@
 # mascotas-app-web
 
-[![CI Pipeline](https://github.com/YOUR_USERNAME/mascotas-app-web/actions/workflows/ci.yml/badge.svg)](https://github.com/YOUR_USERNAME/mascotas-app-web/actions/workflows/ci.yml)
-[![CD Pipeline](https://github.com/YOUR_USERNAME/mascotas-app-web/actions/workflows/cd.yml/badge.svg)](https://github.com/YOUR_USERNAME/mascotas-app-web/actions/workflows/cd.yml)
-[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/YOUR_USERNAME/mascotas-app-web)
+[![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+[![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
+[![Docker](https://img.shields.io/badge/docker-ready-blue)](https://github.com/dcifuentesg/pruebas_devops)
 [![Node.js](https://img.shields.io/badge/node.js-20%2B-green)](https://nodejs.org/)
 
 Aplicación web para gestión de mascotas con backend Node.js/Express y frontend React, completamente dockerizada con CI/CD.
@@ -30,8 +30,8 @@ Aplicación web para gestión de mascotas con backend Node.js/Express y frontend
 
 ```bash
 # Clonar el repositorio
-git clone https://github.com/YOUR_USERNAME/mascotas-app-web.git
-cd mascotas-app-web
+git clone https://github.com/dcifuentesg/pruebas_devops.git
+cd pruebas_devops
 
 # Ejecutar con Docker
 docker-compose up --build
