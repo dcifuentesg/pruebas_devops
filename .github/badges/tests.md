@@ -1,1 +1,1 @@
-![Tests](https://img.shields.io/badge/tests-failing-red)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)

@@ -2,6 +2,15 @@
 
 [![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
 [![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
+![Build Status](https://img.shields.io/badge/build-passing-brightgreen)
+![Tests](https://img.shields.io/badge/tests-passing-brightgreen)
+![Docker](https://img.shields.io/badge/docker-built-blue)
+![Deployment](https://img.shields.io/badge/deployment-deployed-brightgreen)
+![Security](https://img.shields.io/badge/security-scanned-green)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+[![CI Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/ci.yml)
+[![CD Pipeline](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml/badge.svg)](https://github.com/dcifuentesg/pruebas_devops/actions/workflows/cd.yml)
 ![Build Status](https://img.shields.io/badge/build-failing-red)
 ![Tests](https://img.shields.io/badge/tests-failing-red)
 ![Docker](https://img.shields.io/badge/docker-failed-red)

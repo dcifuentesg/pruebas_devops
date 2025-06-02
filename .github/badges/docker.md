@@ -1,1 +1,1 @@
-![Docker](https://img.shields.io/badge/docker-failed-red)
+![Docker](https://img.shields.io/badge/docker-built-blue)
