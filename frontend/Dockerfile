@@ -17,7 +17,7 @@ COPY . .
 RUN npm run build
 
 # Etapa 2: Producción con Nginx
-FROM nginx:1.25-alpine
+FROM nginx:1.29-alpine
 
 # Copiar archivos construidos desde la etapa anterior
 COPY --from=builder /app/dist /usr/share/nginx/html
